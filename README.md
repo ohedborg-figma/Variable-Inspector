@@ -10,6 +10,3 @@ This project is a web-based variable extractor tool that allows users to visuali
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
-
-## Acknowledgements
-Thanks to Figma for the inspiration and initial design concepts.
