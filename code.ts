@@ -1,6 +1,6 @@
 figma.showUI(__html__, { width: 2000, height: 1200 });
 
-// Define custom types to avoid conflicts with Figma's types
+
 type CustomVariableAlias = {
   type: 'VARIABLE_ALIAS';
   id: string;
