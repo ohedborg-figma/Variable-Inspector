@@ -1,0 +1,22 @@
+{
+  "name": "Variable Inspector",
+  "id": "1392821215222468265",
+  "api": "1.0.0",
+  "main": "code.js",
+  "capabilities": [
+    "inspect"
+  ],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "editorType": [
+    "dev"
+  ],
+  "ui": "ui.html",
+  "networkAccess": {
+    "allowedDomains": [
+      "https://fonts.googleapis.com",
+      "https://fonts.gstatic.com",
+      "https://iili.io"
+    ]
+  }
+}

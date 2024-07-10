@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Variable Inspector</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap">
+  <link rel="icon" type="image/png" href="https://iili.io/df42KR2.png">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #121212;
+      color: #E0E0E0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .topbar {
+      width: 100%;
+      background-color: #1E1E1E;
+      color: white;
+      padding: 8px 16px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+    }
+
+    .topbar img {
+      width: 30px;
+      margin-right: 10px;
+    }
+
+    .logo-text {
+      font-family: 'Roboto', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #18AC5C;
+    }
+
+    .main-content {
+      flex-grow: 1;
+      padding: 16px;
+      box-sizing: border-box;
+      background-color: #121212;
+      width: 100%;
+    }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .search-bar input,
+    .filter-select {
+      padding: 6px 10px;
+      border: 1px solid #333333;
+      border-radius: 4px;
+      background-color: #1E1E1E;
+      color: #E0E0E0;
+      margin-right: 10px;
+    }
+
+    .search-bar button {
+      padding: 6px 12px;
+      background-color: #18AC5C;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .search-bar button:hover {
+      background-color: #138949;
+    }
+
+    #table-container {
+      background: #1E1E1E;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+      overflow: auto;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      max-height: 70vh;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #333333;
+      font-size: 13px;
+    }
+
+    th {
+      background-color: #333333;
+      font-weight: 600;
+      color: #E0E0E0;
+    }
+
+    td {
+      background-color: #1E1E1E;
+      color: #E0E0E0;
+      word-wrap: break-word;
+    }
+
+    tr:hover td {
+      background-color: #138949;
+    }
+
+    td:first-child {
+      border-top-left-radius: 8px;
+      border-bottom-left-radius: 8px;
+    }
+
+    td:last-child {
+      border-top-right-radius: 8px;
+      border-bottom-right-radius: 8px;
+    }
+
+    th:nth-child(8), td:nth-child(8) {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo-container">
+      <img src="https://iili.io/df42KR2.png" alt="Variables Logo">
+      <span class="logo-text">Variable Inspector</span>
+    </div>
+  </div>
+  <div class="main-content">
+    <div class="search-bar">
+      <select class="filter-select" id="usage-filter">
+        <option value="all">All</option>
+        <option value="most">Most Used</option>
+        <option value="least">Least Used</option>
+      </select>
+      <input type="text" placeholder="Search for variables..." id="search-input">
+      <button id="search-button">Search</button>
+    </div>
+    <div id="table-container">
+      <table id="variable-table">
+        <thead>
+          <tr>
+            <th>Group</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Value</th>
+            <th>Alias</th>
+            <th>Usage Count</th>
+            <th>Aliases</th>
+            <th>Combined Key (Hidden)</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+    let allVariables = [];
+    let filteredVariables = [];
+
+    window.onmessage = event => {
+      const message = event.data.pluginMessage;
+      if (message && message.type === 'variables') {
+        allVariables = message.variables.map(variable => ({
+          ...variable,
+          combinedKey: `${variable.group}/${variable.name}`
+        }));
+
+        // Calculate usage counts and aliases
+        const usageCounts = {};
+        const aliasMap = {};
+
+        allVariables.forEach(variable => {
+          const combinedKey = variable.combinedKey;
+          if (!usageCounts[combinedKey]) usageCounts[combinedKey] = 0;
+          if (!aliasMap[combinedKey]) aliasMap[combinedKey] = [];
+        });
+
+        allVariables.forEach(variable => {
+          const combinedKey = variable.combinedKey;
+          allVariables.forEach(v => {
+            if (v.value === combinedKey) {
+              usageCounts[combinedKey]++;
+              if (v.alias === 'Yes') aliasMap[combinedKey].push(v.combinedKey);
+            }
+          });
+        });
+
+        allVariables = allVariables.map(variable => ({
+          ...variable,
+          usageCount: usageCounts[variable.combinedKey] || 0,
+          aliases: aliasMap[variable.combinedKey].join('<br>') || ''
+        }));
+
+        filteredVariables = [...allVariables];
+        displayVariables(filteredVariables);
+      }
+    };
+
+    function displayVariables(variables) {
+      const tbody = document.querySelector('#variable-table tbody');
+      tbody.innerHTML = variables.map(variable => `
+        <tr>
+          <td>${variable.group || 'Unknown'}</td>
+          <td>${variable.name || 'Unknown'}</td>
+          <td>${variable.type === 'FLOAT' ? 'Numerical' : variable.type}</td>
+          <td>${variable.value || 'undefined'}</td>
+          <td>${variable.alias || 'No'}</td>
+          <td>${variable.usageCount || 0}</td>
+          <td>${variable.aliases || ''}</td>
+          <td style="display:none;">${variable.combinedKey || ''}</td>
+        </tr>
+      `).join('');
+    }
+
+    function filterAndDisplay() {
+      const searchText = document.getElementById('search-input').value.toLowerCase();
+      const filter = document.getElementById('usage-filter').value;
+
+      filteredVariables = allVariables.filter(variable =>
+        variable.name.toLowerCase().includes(searchText) || variable.group.toLowerCase().includes(searchText)
+      );
+
+      if (filter === 'most') {
+        filteredVariables.sort((a, b) => b.usageCount - a.usageCount);
+      } else if (filter === 'least') {
+        filteredVariables.sort((a, b) => a.usageCount - b.usageCount);
+      }
+
+      displayVariables(filteredVariables);
+    }
+
+    document.getElementById('usage-filter').addEventListener('change', filterAndDisplay);
+    document.getElementById('search-button').addEventListener('click', filterAndDisplay);
+  </script>
+</body>
+</html>
