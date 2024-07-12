@@ -1,6 +1,5 @@
 figma.showUI(__html__, { width: 2000, height: 1200 });
 
-
 type CustomVariableAlias = {
   type: 'VARIABLE_ALIAS';
   id: string;
@@ -68,9 +67,22 @@ function getUsageCount(variables: CustomVariable[], id: string): number {
 function formatValue(type: string, value: CustomVariableValue): string {
   if (type === 'COLOR' && typeof value === 'object') {
     const { r, g, b, a } = value as { r: number, g: number, b: number, a: number };
-    return `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, ${a})`;
+    return rgbToHex({ r, g, b, a });
   }
   return value.toString();
+}
+
+function rgbToHex({ r, g, b, a }: { r: number, g: number, b: number, a: number }): string {
+  const toHex = (value: number) => {
+    const hex = Math.round(value * 255).toString(16);
+    return hex.length === 1 ? "0" + hex : hex;
+  };
+
+  const hex = [toHex(r), toHex(g), toHex(b)];
+  if (a !== 1) {
+    hex.push(toHex(a));
+  }
+  return `#${hex.join("")}`;
 }
 
 (async () => {
